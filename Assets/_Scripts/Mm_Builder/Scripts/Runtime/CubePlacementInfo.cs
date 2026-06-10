@@ -5,7 +5,7 @@ namespace Mm_Budier
 {
     /// <summary>
     /// 一次放置的完整描述
-    /// 射线命中格为锚点 Origin为占格最小角
+    /// targetCell为占格起始格 方块向正X正Y正Z延伸CellSize格
     /// 预制体pivot在几何中心时使用WorldCenter摆放
     /// </summary>
     public readonly struct CubePlacementInfo
@@ -42,13 +42,9 @@ namespace Mm_Budier
         }
 
         /// <summary>
-        /// 由锚点格构建放置描述
+        /// 由目标格构建放置描述
         /// </summary>
-        /// <param name="anchorCell">锚点格</param>
-        /// <param name="cubeData">方块数据</param>
-        /// <param name="grid">网格</param>
-        /// <param name="placement">放置描述</param>
-        /// <returns>是否成功</returns>
+        /// <param name="targetCell">占格起始格 射线算出的要放置的第一格</param>
         public static bool TryCreate(Vector3Int targetCell,
                                      CubeData cubeData,
                                      VirtualGrid grid,
@@ -59,13 +55,8 @@ namespace Mm_Budier
                 return false;
 
             var cellSize = GetCellSize(cubeData);
-            // 计算放置的起始点 
-            // 比如只看X维度 targetCell = 0, cellSize = 2 则origin = -1
-            // 也就是从-1到0 占两个格子 实际上cellSize的意思更像是结束点
-            // start + end - 1 = length , start = end - length + 1
-            var origin = targetCell - cellSize + Vector3Int.one;
-
-            placement = new CubePlacementInfo(origin, cellSize, grid.gridUnitSize);
+            // targetCell就是起始格 比如X维 targetCell=0 cellSize=2 占0和1
+            placement = new CubePlacementInfo(targetCell, cellSize, grid.gridUnitSize);
             return true;
         }
 

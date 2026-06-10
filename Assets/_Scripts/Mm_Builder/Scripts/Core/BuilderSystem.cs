@@ -87,46 +87,47 @@ namespace Mm_Budier
 
             Vector3Int targetCell = default;
             bool canPlace = false;
+            bool fromRaycast = config.CanRaycast();
 
-            //进行间歇性射线检测
-            if (config.CanRaycast())
+            // 从射线检测中获取目标格
+            if (fromRaycast)
             {
                 if (!TryGetPlacementHit(out var hit))
                 {
                     HidePreView();
                     return;
                 }
-
-                // 计算目标单元格
                 targetCell = GetTargetCell(hit);
-                if (!CubePlacementInfo.TryCreate(targetCell, cubeData, virtualGrid, out var placement))
-                {
-                    HidePreView();
-                    return;
-                }
-
-                canPlace = ValidatePlacement(placement);
-                config.UpdateCache(placement.WorldCenter, targetCell, canPlace);
             }
-            //使用缓存结果
+            // 从缓存中获取目标格
             else if (!config.TryGetCachedResult(out _, out targetCell, out canPlace))
             {
                 HidePreView();
                 return;
             }
 
-            if (!CubePlacementInfo.TryCreate(targetCell, cubeData, virtualGrid, out var current))
+            // 计算放置信息
+            if (!CubePlacementInfo.TryCreate(targetCell, cubeData, virtualGrid, out var placement))
             {
                 HidePreView();
                 return;
             }
 
-            //更新预览
-            HandlePreview(current, cubeData, canPlace);
+            // 从射线检测中获取目标格 需要验证放置信息
+            if (fromRaycast)
+            {
+                // 验证放置信息
+                canPlace = ValidatePlacement(placement);
+                // 更新缓存
+                config.UpdateCache(placement.WorldCenter, targetCell, canPlace);
+            }
 
-            //处理输入并放置
+            // 处理预览
+            HandlePreview(placement, cubeData, canPlace);
+
+            // 处理输入并放置
             if (HandleInput(canPlace))
-                HandlePlaceCube(current, cubeData);
+                HandlePlaceCube(placement, cubeData);
         }
 
         /// <summary>
@@ -192,7 +193,7 @@ namespace Mm_Budier
         }
 
         /// <summary>
-        /// 命中面外侧空格 作为占格目标格
+        /// 命中面外侧空格 作为占格起始格
         /// </summary>
         private Vector3Int GetTargetCell(RaycastHit hit)
         {
