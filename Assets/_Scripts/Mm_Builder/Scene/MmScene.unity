@@ -161,7 +161,6 @@ GameObject:
   - component: {fileID: 249174110}
   - component: {fileID: 249174111}
   - component: {fileID: 249174112}
-  - component: {fileID: 249174114}
   m_Layer: 0
   m_Name: MmBuilderMgr
   m_TagString: Untagged
@@ -200,10 +199,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Mm_Budier.CubeManager
   virtualGrid: {fileID: 249174112}
-  chunkSystem: {fileID: 249174114}
   mainCamera: {fileID: 408390182742623317}
   playerCollider: {fileID: 2043566762401880591}
-  config: {fileID: 11400000, guid: b7d7e65d195a98e43950db3753c70d95, type: 2}
+  cubeRoot: {fileID: 1248525304}
+  preViewRoot: {fileID: 628905404}
+  builderSetting: {fileID: 11400000, guid: b7d7e65d195a98e43950db3753c70d95, type: 2}
   activeCubeData: {fileID: 11400000, guid: 4cb50d255cb69d7449a8887746fd0bc5, type: 2}
 --- !u!114 &249174112
 MonoBehaviour:
@@ -227,26 +227,6 @@ MonoBehaviour:
   showYAxisColor: 0
   gridColor: {r: 1, g: 1, b: 1, a: 0.3}
   yAxisColor: {r: 1, g: 1, b: 1, a: 0.5411765}
---- !u!114 &249174114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249174109}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd1df7ec18246b54eb53d99e642f65be, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Mm_Budier.ChunkSystem
-  chunkSize: 16
-  loadRadius: 1
-  showChunkBounds: 0
-  chunkBorderColor: {r: 0, g: 1, b: 0, a: 1}
-  currentChunkColor: {r: 1, g: 0, b: 0, a: 1}
-  showPlayerPos: 0
-  playerIconSize: 1
-  currentChunkCoord: {x: 0, y: 0, z: 0}
 --- !u!1 &628905403
 GameObject:
   m_ObjectHideFlags: 0

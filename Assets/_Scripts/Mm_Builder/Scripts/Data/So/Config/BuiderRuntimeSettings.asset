@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89a9d8ef71666694d954275c9e3ee055, type: 3}
+  m_Name: BuiderRuntimeSettings
+  m_EditorClassIdentifier: Assembly-CSharp::Mm_Budier.CubeBuiderSystemConfig
+  serializationData:
+    SerializedFormat: 2
+    SerializedBytes: 
+    ReferencedUnityObjects:
+    - {fileID: 11400000, guid: 4cb50d255cb69d7449a8887746fd0bc5, type: 2}
+    - {fileID: 11400000, guid: 46b51e75f7739e54d9aa873e493ef831, type: 2}
+    - {fileID: 11400000, guid: 6692385c8f78a3c4a86fc4fabde13b9d, type: 2}
+    - {fileID: 11400000, guid: a167a3f9b73430f49a122d1a6dc8db1d, type: 2}
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: allCubeDataDict
+      Entry: 7
+      Data: 0|System.Collections.Generic.Dictionary`2[[Mm_Budier.ECubeType, Assembly-CSharp],[Mm_Budier.CubeData,
+        Assembly-CSharp]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 1|System.Collections.Generic.EnumEqualityComparer`1[[Mm_Budier.ECubeType,
+        Assembly-CSharp]], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 4
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 3
+      Data: 2
+    - Name: $v
+      Entry: 10
+      Data: 0
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 3
+      Data: 5
+    - Name: $v
+      Entry: 10
+      Data: 1
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 3
+      Data: 3
+    - Name: $v
+      Entry: 10
+      Data: 2
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 7
+      Data: 
+    - Name: $k
+      Entry: 3
+      Data: 1
+    - Name: $v
+      Entry: 10
+      Data: 3
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+  cubeLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  raycastMaxDistance: 4
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 1
+  preTrueMaterial: {fileID: 2100000, guid: 6aee7efc154d0f643be6992daf82c5c6, type: 2}
+  preFalseMaterial: {fileID: 2100000, guid: 7ce0ca81b6387104ca2d9e77a5cf0cdb, type: 2}
+  SavePath: C:/Users/fmz/AppData/LocalLow/DefaultCompany/MmBuildSystem/BuilderSystemData/

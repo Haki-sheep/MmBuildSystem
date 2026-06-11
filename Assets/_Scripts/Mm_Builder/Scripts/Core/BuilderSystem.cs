@@ -14,67 +14,77 @@ namespace Mm_Budier
     {
         [Header("必要组件")]
         [LabelText("虚拟网格组件")] public VirtualGrid virtualGrid;
-        [LabelText("区块加载系统")] public ChunkSystem chunkSystem;
 
         [LabelText("相机组件")] public Camera mainCamera;//做第一人称的话用这个
         [LabelText("玩家碰撞体组件")] public Collider playerCollider;
 
-        [LabelText("配置文件")] public CubeBuiderSystemConfig config;
+        [Header("场景根节点")] 
+        [LabelText("方块根节点")] public Transform cubeRoot;
+        [LabelText("预览方块根节点")] public Transform preViewRoot;
+
+        [LabelText("配置文件")]
+        public BuilderSystemSetting builderSetting;
+
 
         [Header("Debug")]
         [LabelText("当前活跃方块类型")] public CubeData activeCubeData;
-        public Dictionary<Vector3Int, CubeRuntimeData> cubeMgrDict = new();//总方块字典
 
-        //占格校验临时列表
+        /// <summary>
+        /// 运行时状态：UI 打开时屏蔽射线检测与放置
+        /// 由 UI 在开关时调用 SetUIOpen 维护
+        /// </summary>
+        [NonSerialized] public bool isUIOpen;
+        public void SetUIOpen(bool open) => isUIOpen = open;
+
+        /// <summary>
+        /// 运行时总方块字典
+        /// </summary>
+        private Dictionary<Vector3Int, PlacedCube> runtimeCubeDataDict = new();
+
+        /// <summary>
+        /// 占格校验临时列表
+        /// </summary>
         private readonly List<Vector3Int> occupiedList = new(8);
 
-        ///  方块根节点
-        private Transform cubeRoot;
-        /// 预览方块根节点 
-        private Transform preViewRoot;
-        /// 区块根节点 
-        private Transform chunkRoot;
-        public Transform ChunkRoot => chunkRoot;
 
-        [NonSerialized] public static BuilderSystem Instance;
+        /// <summary>
+        /// 单例
+        /// </summary>
+        private static BuilderSystem instance;
+        public static BuilderSystem Instance { get => instance; private set => instance = value; }
 
         // 放置偏移量 防止穿模
         public const float PLACEMENT_EPSILON = 0.01f;
 
         void Awake()
         {
-            //单例初始化
-            if (Instance != null && Instance != this)
+            if (instance != null && instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
-            Instance = this;
+            instance = this;
 
             virtualGrid ??= GetComponent<VirtualGrid>();
             mainCamera ??= Camera.main;
-
-            config.InitCameraInfo(mainCamera);
-
         }
 
         void Start()
         {
-            cubeRoot = this.transform.Find("CubeRoot");
-            preViewRoot = this.transform.Find("PreViewRoot");
-            chunkRoot = this.transform.Find("ChunkRoot");
             InitPreView();
         }
-
 
         void Update()
         {
             TryPlaceCube(activeCubeData);
-            chunkSystem?.UpdateChunk(playerCollider.transform.position);
         }
 
 
         #region 公共函数
+        /// <summary>
+        /// 尝试放置方块
+        /// </summary>
+        /// <param name="cubeData">方块数据</param>
         public void TryPlaceCube(CubeData cubeData)
         {
             //拿到当前方块数据
@@ -85,26 +95,20 @@ namespace Mm_Budier
                 return;
             }
 
-            Vector3Int targetCell = default;
-            bool canPlace = false;
-            bool fromRaycast = config.CanRaycast();
-
-            // 从射线检测中获取目标格
-            if (fromRaycast)
-            {
-                if (!TryGetPlacementHit(out var hit))
-                {
-                    HidePreView();
-                    return;
-                }
-                targetCell = GetTargetCell(hit);
-            }
-            // 从缓存中获取目标格
-            else if (!config.TryGetCachedResult(out _, out targetCell, out canPlace))
+            // 打开 UI 时不检测
+            if (isUIOpen)
             {
                 HidePreView();
                 return;
             }
+
+            // 从射线检测中获取目标格
+            if (!TryGetPlacementHit(out var hit))
+            {
+                HidePreView();
+                return;
+            }
+            var targetCell = GetTargetCell(hit);
 
             // 计算放置信息
             if (!CubePlacementInfo.TryCreatePltInfo(targetCell, cubeData, virtualGrid, out var placement))
@@ -113,14 +117,8 @@ namespace Mm_Budier
                 return;
             }
 
-            // 从射线检测中获取目标格 需要验证放置信息
-            if (fromRaycast)
-            {
-                // 验证放置信息
-                canPlace = ValidatePlacement(placement);
-                // 更新缓存
-                config.UpdateCache(placement.CubeWorldCenter, targetCell, canPlace);
-            }
+            // 验证放置信息
+            bool canPlace = ValidatePlacement(placement);
 
             // 处理预览
             HandlePreview(placement, cubeData, canPlace);
@@ -157,13 +155,13 @@ namespace Mm_Budier
 
             // 从屏幕中心发射射线
             var ray = mainCamera.ScreenPointToRay(new Vector3(Screen.width * 0.5f, Screen.height * 0.5f));
-            var hits = config.raycastHits;
-            var mask = config.groundLayer | config.cubeLayer;
+            var hits = builderSetting.raycastHits;
+            var mask = builderSetting.groundLayer | builderSetting.cubeLayer;
 
             // 射线检测
             int hitCount = Physics.RaycastNonAlloc(ray,  // 射线
                                                    hits,  // 碰撞体数组
-                                                   config.raycastMaxDistance,  // 最大距离
+                                                   builderSetting.raycastMaxDistance,  // 最大距离
                                                    mask,  // 层掩码
                                                    QueryTriggerInteraction.Ignore);  // 触发器交互
 
@@ -254,15 +252,8 @@ namespace Mm_Budier
                     return false;
 
                 //验证是否已有方块
-                if (chunkSystem != null)
-                {
-                    if (chunkSystem.HasCube(cell))
-                        return false;
-                }
-                else if (cubeMgrDict.ContainsKey(cell))
-                {
+                if (runtimeCubeDataDict.ContainsKey(cell))
                     return false;
-                }
             }
 
             //验证是否与玩家碰撞体重叠
@@ -275,21 +266,25 @@ namespace Mm_Budier
         /// <summary>
         /// 放置方块
         /// </summary>
+        /// <param name="placement">放置信息</param>
+        /// <param name="cubeData">方块数据</param>
+        /// <returns>创建的方块物体</returns>
         private void HandlePlaceCube(CubePlacementInfo placement, CubeData cubeData)
         {
-            // 获取占格列表
-            placement.FillOccupiedCells(occupiedList);
             // 创建方块
             var spawnedObj = TryCreatCube(placement, cubeData);
-            // 单位方块不单独存占格列表
-            var occupiedGridList = cubeData.IsUnit ? null : new List<Vector3Int>(occupiedList);
+            // 只记录起始格 占格按尺寸现算
+            var runtimeData = new PlacedCube(cubeData, spawnedObj, placement.OriginPoint);
             // 保存数据到缓存
-            HandleDataToCache(placement, cubeData, spawnedObj, occupiedGridList);
+            HandleDataToCache(placement, runtimeData);
         }
 
         /// <summary>
         /// 创建方块
         /// </summary>
+        /// <param name="placement">放置信息</param>
+        /// <param name="cubeData">方块数据</param>
+        /// <returns>创建的方块物体</returns>
         private GameObject TryCreatCube(CubePlacementInfo placement, CubeData cubeData)
         {
             var prefab = cubeData.CubePrefab;
@@ -304,32 +299,30 @@ namespace Mm_Budier
                 placement.CubeWorldCenter,
                 Quaternion.identity,
                 cubeRoot);
-            spawnedObj.layer = config.cubeLayer;
+            spawnedObj.layer = builderSetting.cubeLayer;
             return spawnedObj;
         }
 
         /// <summary>
         /// 保存数据到内存
         /// </summary>
-        private void HandleDataToCache(CubePlacementInfo placement,
-                                CubeData cubeData,
-                                GameObject spawnedObj,
-                                List<Vector3Int> occupiedGridList)
+        /// <param name="placement">放置信息</param>
+        /// <param name="placedData">已放置方块记录</param>
+        private void HandleDataToCache(CubePlacementInfo placement, PlacedCube placedData)
         {
-            var runtimeData = new CubeRuntimeData(cubeData, spawnedObj, occupiedGridList);
-            // 如果占格列表为空 则认为是单位方块 直接添加到字典中
-            if (occupiedGridList == null)
+            var cubeData = placedData.data;
+            // 单位方块只占起始格 直接添加到字典中
+            if (cubeData.IsUnit)
             {
-                cubeMgrDict.Add(placement.OriginPoint, runtimeData);
-                chunkSystem?.AddCube(placement.OriginPoint, cubeData);
+                runtimeCubeDataDict.Add(placement.OriginPoint, placedData);
                 return;
             }
 
-            // 如果占格列表不为空 则认为是非单位方块 则遍历占格列表 逐个添加到字典中
-            foreach (var pos in occupiedGridList)
+            // 非单位方块 遍历占格 逐个添加到字典中 同一份记录被多个 key 共享
+            placement.FillOccupiedCells(occupiedList);
+            foreach (var pos in occupiedList)
             {
-                cubeMgrDict.Add(pos, runtimeData);
-                chunkSystem?.AddCube(pos, cubeData);
+                runtimeCubeDataDict.Add(pos, placedData);
             }
         }
 
@@ -338,23 +331,24 @@ namespace Mm_Budier
         /// </summary>
         private void BreakCube(Vector3Int gridPos)
         {
-            if (!cubeMgrDict.TryGetValue(gridPos, out var data)) return;
+            if (!runtimeCubeDataDict.TryGetValue(gridPos, out var data)) return;
 
             //销毁方块物体
             if (data.spawnedObj != null) Destroy(data.spawnedObj);
 
-            if (data.occupiedGrids == null)
+            // 单位方块只占一格 直接移除
+            if (data.data.IsUnit)
             {
-                cubeMgrDict.Remove(gridPos);
-                chunkSystem?.RemoveCube(gridPos);
+                runtimeCubeDataDict.Remove(gridPos);
                 return;
             }
 
-            //删除所有占用网格
-            foreach (var pos in data.occupiedGrids)
+            // 非单位方块 用起始格 + 尺寸现算出所有占格 逐个移除
+            var placement = new CubePlacementInfo(data.origin, data.data.GetCubePrefabSizeInt(), virtualGrid.gridUnitSize);
+            placement.FillOccupiedCells(occupiedList);
+            foreach (var pos in occupiedList)
             {
-                if (cubeMgrDict.ContainsKey(pos)) cubeMgrDict.Remove(pos);
-                chunkSystem?.RemoveCube(pos);
+                if (runtimeCubeDataDict.ContainsKey(pos)) runtimeCubeDataDict.Remove(pos);
             }
         }
         #endregion

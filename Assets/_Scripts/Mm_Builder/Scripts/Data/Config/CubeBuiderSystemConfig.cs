@@ -1,131 +1,82 @@
+using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace Mm_Budier
 {
-    [CreateAssetMenu(fileName = "NetConfig", menuName = "Mm_Builder/BdSystemConfig")]
-    public class CubeBuiderSystemConfig : SerializedScriptableObject
+    [CreateAssetMenu(fileName = "BuilderSystemSetting", menuName = "Mm_Builder/BuilderSystemSetting")]
+    public class BuilderSystemSetting : SerializedScriptableObject
     {
-        private static CubeBuiderSystemConfig instance;
-        public static CubeBuiderSystemConfig Instance
+        private static BuilderSystemSetting instance;
+
+        public static BuilderSystemSetting Instance
         {
             get
             {
-                if (instance == null) 
-                instance = AssetDatabase.LoadAssetAtPath<CubeBuiderSystemConfig>(
-                        "Assets/_Scripts/Mm_Builder/Scripts/Data/So/Config/DefaultConfig.asset");
+                if (instance == null)
+                    instance = AssetDatabase.LoadAssetAtPath<BuilderSystemSetting>(
+                            "Assets/_Scripts/Mm_Builder/Scripts/Data/So/Config/DefaultConfig.asset");
                 return instance;
             }
         }
 
+
         [Header("射线检测设置")] //此处可替换为其他检测方式 只需要提供相同参数即可
-        [LabelText("射线检测方块层级"), SerializeField] 
+        [TitleGroup("射线检测设置"),LabelText("射线检测方块层级"), SerializeField]
         public LayerMask cubeLayer;
-        [LabelText("射线检测最大距离"), SerializeField] 
+        [TitleGroup("射线检测设置"),LabelText("射线检测最大距离"), SerializeField]
         public float raycastMaxDistance;
-        [LabelText("地面层级"), SerializeField] 
+        [TitleGroup("射线检测设置"),LabelText("地面层级"), SerializeField]
         public LayerMask groundLayer;
-        [LabelText("最大命中缓存"), SerializeField] 
+        [TitleGroup("射线检测设置"),LabelText("最大命中缓存"), SerializeField]
         public RaycastHit[] raycastHits = new RaycastHit[16];
 
 
-        [Header("性能优化")]
-        [LabelText("开启射线检测优化"), SerializeField]
-        public bool isOpenRaycastOptimize;
-        [LabelText("射线检测间隔（秒）"), SerializeField, ShowIf("isOpenRaycastOptimize")]
-        public float raycastInterval = 0.1f;
-        [LabelText("打开其他UI项目时跳过检测"), SerializeField]
-        public bool onUICloseRaycast;
-
         [Header("预览材质")]
-        [LabelText("可放置预览材质"), SerializeField] public Material preTrueMaterial;
-        [LabelText("不可放置预览材质"), SerializeField] public Material preFalseMaterial;
+        [TitleGroup("预览材质"),LabelText("可放置预览材质"), SerializeField]
+        public Material preTrueMaterial;
+        [TitleGroup("预览材质"),LabelText("不可放置预览材质"), SerializeField]
+        public Material preFalseMaterial;
 
-        // 缓存射线检测结果
-        private Vector3 cachedWorldPos;
-        private Vector3Int cachedGridPos;
-        private bool cachedCanPlace;
-        private bool hasCachedResult;
+        [TitleGroup("数据保存设置"),LabelText("数据保存路径"), SerializeField]
+        public string SavePath = Application.persistentDataPath + "/BuilderSystemData/";
 
-        // 优化相关
-        private float lastRaycastTime;
-        private Vector3 lastCamPos;
-        private Quaternion lastCamRot;
-        private Camera mainCamera;
+        [TitleGroup("数据保存设置"),LabelText("所有方块数据字典"), SerializeField]
+        public Dictionary<ECubeType, CubeData> allCubeDataDict = new();
 
-        public void InitCameraInfo(Camera camera)
-        {
-            mainCamera = camera;
-            lastCamPos = mainCamera.transform.position;
-            lastCamRot = mainCamera.transform.rotation;
-            lastRaycastTime = -raycastInterval; // 初始化时允许立即检测
-        }
-
+#if UNITY_EDITOR
         /// <summary>
-        /// 判断是否需要进行射线检测
-        /// 优先级：UI打开 > 相机移动 > 时间间隔
+        /// 扫描工程内所有 CubeData 资产 按类型注册进字典 供存读档反查预制体
         /// </summary>
-        public bool CanRaycast()
+        [TitleGroup("数据保存设置")]
+        [Button("扫描并注册所有方块数据", ButtonSizes.Medium)]
+        private void RegisterAllCubeData()
         {
-            // UI打开时不检测
-            if (onUICloseRaycast) return false;
+            allCubeDataDict.Clear();
 
-            // 没开启优化时，始终允许检测
-            if (!isOpenRaycastOptimize) return true;
-
-            // 相机移动了，立即检测
-            if (mainCamera != null)
+            var guids = AssetDatabase.FindAssets("t:CubeData");
+            foreach (var guid in guids)
             {
-                if (Vector3.SqrMagnitude(lastCamPos - mainCamera.transform.position) > 0.0001f
-                    || Quaternion.Angle(lastCamRot, mainCamera.transform.rotation) > 0.1f)
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var data = AssetDatabase.LoadAssetAtPath<CubeData>(path);
+                if (data == null)
+                    continue;
+
+                // 同一类型只保留一个 重复的跳过并提示
+                if (allCubeDataDict.ContainsKey(data.CubeType))
                 {
-                    lastCamPos = mainCamera.transform.position;
-                    lastCamRot = mainCamera.transform.rotation;
-                    lastRaycastTime = Time.time;
-                    return true;
+                    Debug.LogWarning($"[注册] 方块类型 {data.CubeType} 重复，已跳过：{path}");
+                    continue;
                 }
+
+                allCubeDataDict.Add(data.CubeType, data);
             }
 
-            // 相机没动，按时间间隔检测
-            if (Time.time - lastRaycastTime >= raycastInterval)
-            {
-                lastRaycastTime = Time.time;
-                return true;
-            }
-
-            // 都不满足，用缓存
-            return false;
+            EditorUtility.SetDirty(this);
+            AssetDatabase.SaveAssetIfDirty(this);
+            Debug.Log($"[注册] 完成，共注册 {allCubeDataDict.Count} 种方块");
         }
-
-        /// <summary>
-        /// 更新缓存的检测结果
-        /// </summary>
-        public void UpdateCache(Vector3 worldPos, Vector3Int gridPos, bool canPlace)
-        {
-            cachedWorldPos = worldPos;
-            cachedGridPos = gridPos;
-            cachedCanPlace = canPlace;
-            hasCachedResult = true;
-        }
-
-        /// <summary>
-        /// 获取缓存的检测结果
-        /// </summary>
-        public bool TryGetCachedResult(out Vector3 worldPos, out Vector3Int gridPos, out bool canPlace)
-        {
-            if (hasCachedResult)
-            {
-                worldPos = cachedWorldPos;
-                gridPos = cachedGridPos;
-                canPlace = cachedCanPlace;
-                return true;
-            }
-            worldPos = default;
-            gridPos = default;
-            canPlace = false;
-            return false;
-        }
+#endif
     }
 }

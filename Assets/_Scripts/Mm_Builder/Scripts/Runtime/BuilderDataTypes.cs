@@ -5,6 +5,7 @@ namespace Mm_Budier
 {
     /// <summary>
     /// 一次放置的完整描述
+    /// 此结构体用于计算放置信息 做上下文传递（临时、值类型、不可变）
     /// </summary>
     public readonly struct CubePlacementInfo
     {
@@ -20,7 +21,7 @@ namespace Mm_Budier
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="origin">最小角</param>
+        /// <param name="origin">放置起始格</param>
         /// <param name="cellSize">逻辑占格尺寸</param>
         /// <param name="gridUnitSize">网格单元大小</param>
         public CubePlacementInfo(Vector3Int origin, Vector3Int cellSize, float gridUnitSize)
@@ -69,4 +70,24 @@ namespace Mm_Budier
                         output.Add(new Vector3Int(OriginPoint.x + x, OriginPoint.y + y, OriginPoint.z + z));
         }
     }
+
+    /// <summary>
+    /// 已放置的方块
+    /// 本类作为一条数据 做持久化存储
+    /// 只存起始格 origin，占用的所有格按 data 的尺寸现算（破坏/存档时）
+    /// </summary>
+    public class PlacedCube
+    {
+        public CubeData data;
+        public GameObject spawnedObj;
+        public Vector3Int origin;
+
+        public PlacedCube(CubeData data, GameObject spawnedObj, Vector3Int origin)
+        {
+            this.data = data;
+            this.spawnedObj = spawnedObj;
+            this.origin = origin;
+        }
+    }
+
 }

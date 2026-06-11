@@ -15,20 +15,12 @@ namespace Mm_Budier
         private MeshFilter preMeshFilter;
         //当前预览方块数据
         private CubeData currentPreCubeData;
-
+        
         /// <summary>
         /// 初始化预览方块
         /// </summary>
         private void InitPreView()
         {
-            //如果预览方块根节点为空则创建一个
-            if (preViewRoot == null)
-            {
-                var root = transform.Find("PreviewRoot");
-                preViewRoot = root != null ? root : new GameObject("PreViewRoot").transform;
-                preViewRoot.SetParent(transform, false);
-            }
-
             //创建预览方块
             preObj = new GameObject("PreViewObj");
             preObj.transform.SetParent(preViewRoot, false);
@@ -39,8 +31,8 @@ namespace Mm_Budier
             preMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             preMeshRenderer.receiveShadows = false;
 
-            if (config?.preTrueMaterial != null)
-                preMeshRenderer.sharedMaterial = config.preTrueMaterial;
+            if (builderSetting?.preTrueMaterial != null)
+                preMeshRenderer.sharedMaterial = builderSetting.preTrueMaterial;
 
             preObj.SetActive(false);
         }
@@ -61,7 +53,7 @@ namespace Mm_Budier
         /// </summary>
         private void HandlePreview(CubePlacementInfo placement, CubeData cubeData, bool canPlace)
         {
-            if (cubeData?.CubePrefab == null || config == null)
+            if (cubeData?.CubePrefab == null || builderSetting == null)
             {
                 HidePreView();
                 return;
@@ -90,7 +82,7 @@ namespace Mm_Budier
             preObj.transform.localScale = cubeData.CubePrefab.transform.localScale;
 
             //按能否放置切换预览材质
-            preMeshRenderer.sharedMaterial = canPlace ? config.preTrueMaterial : config.preFalseMaterial;
+            preMeshRenderer.sharedMaterial = canPlace ? builderSetting.preTrueMaterial : builderSetting.preFalseMaterial;
         }
     }
 }

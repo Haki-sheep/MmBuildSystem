@@ -11,11 +11,11 @@ namespace Mm_Budier.Editor
         [InlineEditor(InlineEditorModes.FullEditor)]
         [HideLabel]
         [ShowInInspector]
-        private CubeBuiderSystemConfig config;
+        private BuilderSystemSetting config;
 
         public void LoadConfig()
         {
-            config = AssetDatabase.LoadAssetAtPath<CubeBuiderSystemConfig>(ConfigAssetPath);
+            config = AssetDatabase.LoadAssetAtPath<BuilderSystemSetting>(ConfigAssetPath);
         }
     }
 }
