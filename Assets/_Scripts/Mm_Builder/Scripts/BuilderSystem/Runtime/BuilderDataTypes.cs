@@ -43,7 +43,7 @@ namespace Mm_Budier
         /// <param name="targetPoint">占格起始格 射线算出的要放置的第一格</param>
         public static bool TryCreatePltInfo(Vector3Int targetPoint,
                                      CubeData cubeData,
-                                     VirtualGrid grid,
+                                     BuilderVirtualGrid grid,
                                      out CubePlacementInfo placement)
         {
             placement = default;

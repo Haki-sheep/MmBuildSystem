@@ -12,7 +12,6 @@ namespace Mm_Budier
         public ECubeType CubeType;
         [LabelText("预制体")]
         public GameObject CubePrefab;
-
         public bool IsUnit => GetCubePrefabSizeInt() == Vector3Int.one;
 
         /// <summary>

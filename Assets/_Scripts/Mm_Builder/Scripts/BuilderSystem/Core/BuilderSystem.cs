@@ -9,16 +9,16 @@ using UnityEngine.InputSystem;
 namespace Mm_Budier
 {
 
-    [RequireComponent(typeof(VirtualGrid))]
+    [RequireComponent(typeof(BuilderVirtualGrid))]
     public partial class BuilderSystem : MonoBehaviour
     {
         [Header("必要组件")]
-        [LabelText("虚拟网格组件")] public VirtualGrid virtualGrid;
+        [LabelText("虚拟网格组件")] public BuilderVirtualGrid virtualGrid;
 
         [LabelText("相机组件")] public Camera mainCamera;//做第一人称的话用这个
         [LabelText("玩家碰撞体组件")] public Collider playerCollider;
 
-        [Header("场景根节点")] 
+        [Header("场景根节点")]
         [LabelText("方块根节点")] public Transform cubeRoot;
         [LabelText("预览方块根节点")] public Transform preViewRoot;
 
@@ -73,7 +73,7 @@ namespace Mm_Budier
             }
             instance = this;
 
-            virtualGrid ??= GetComponent<VirtualGrid>();
+            virtualGrid ??= GetComponent<BuilderVirtualGrid>();
             mainCamera ??= Camera.main;
         }
 
@@ -305,6 +305,7 @@ namespace Mm_Budier
         {
             var spawnedObj = TryCreatCube(placement, cubeData, rotationSteps);
             var runtimeData = new PlacedCube(cubeData, spawnedObj, placement.OriginPoint, rotationSteps);
+            spawnedObj.GetComponent<CubeBehaviour>()?.OnPlaced(runtimeData);
             HandleDataToCache(placement, runtimeData, rotationSteps);
         }
 
@@ -353,8 +354,11 @@ namespace Mm_Budier
         {
             if (!runtimeCubeDataDict.TryGetValue(gridPos, out var data)) return;
 
+            data.spawnedObj.GetComponent<CubeBehaviour>()?.OnRemoved();
+
             //销毁方块物体
             if (data.spawnedObj != null) Destroy(data.spawnedObj);
+
 
             // 单位方块只占一格 直接移除
             if (data.data.IsUnit)
@@ -362,6 +366,7 @@ namespace Mm_Budier
                 runtimeCubeDataDict.Remove(gridPos);
                 return;
             }
+
 
             CubePlacementInfo.FillOccupiedCells(
                 data.origin,

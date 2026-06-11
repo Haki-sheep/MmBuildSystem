@@ -204,6 +204,8 @@ MonoBehaviour:
   cubeRoot: {fileID: 1248525304}
   preViewRoot: {fileID: 628905404}
   builderSetting: {fileID: 11400000, guid: b7d7e65d195a98e43950db3753c70d95, type: 2}
+  rotateCounterClockwiseKey: 31
+  rotateClockwiseKey: 19
   activeCubeData: {fileID: 11400000, guid: 4cb50d255cb69d7449a8887746fd0bc5, type: 2}
 --- !u!114 &249174112
 MonoBehaviour:
@@ -1102,7 +1104,6 @@ GameObject:
   - component: {fileID: 6472746741886817216}
   - component: {fileID: 2043566762401880591}
   - component: {fileID: 9153904879073258421}
-  - component: {fileID: 9153904879073258422}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1153,19 +1154,6 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 65
---- !u!114 &9153904879073258422
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8592273790264659892}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9edd91b2c2971c1458a25f082d0a9b5a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Mm_Budier.BuilderSaveTest
-  builderSystem: {fileID: 249174111}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

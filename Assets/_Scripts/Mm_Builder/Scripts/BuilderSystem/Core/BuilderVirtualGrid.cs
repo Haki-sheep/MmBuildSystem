@@ -1,7 +1,7 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-public class VirtualGrid : MonoBehaviour
+public class BuilderVirtualGrid : MonoBehaviour
 {
     [Header("基础设置")]
     [LabelText("显示开关")] public bool showGrid = true;
