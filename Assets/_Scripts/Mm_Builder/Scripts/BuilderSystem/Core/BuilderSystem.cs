@@ -276,7 +276,7 @@ namespace Mm_Budier
             foreach (var cell in occupiedList)
             {
                 //验证是否超出边界
-                if (!virtualGrid.ValidBoundary(cell))
+                if (!virtualGrid.ValidPlacementCell(cell))
                     return false;
 
                 //验证是否已有方块

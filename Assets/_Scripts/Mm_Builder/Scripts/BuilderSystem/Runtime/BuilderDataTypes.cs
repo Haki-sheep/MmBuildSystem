@@ -155,7 +155,7 @@ namespace Mm_Budier
     {
         public CubeData data;
         public GameObject spawnedObj;
-        public Vector3Int origin;
+        public Vector3Int origin ;
         /// <summary> Y 轴旋转步数，每步 90° </summary>
         public int rotationSteps;
 

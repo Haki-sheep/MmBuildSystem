@@ -1,10 +1,10 @@
+using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
 public class BuilderVirtualGrid : MonoBehaviour
 {
     [Header("基础设置")]
-    [LabelText("显示开关")] public bool showGrid = true;
     [LabelText("单位虚拟网格大小")] public int gridUnitSize;
 
     [LabelText("虚拟网格X/Z最小坐标")] public int minGridXZ;
@@ -12,10 +12,22 @@ public class BuilderVirtualGrid : MonoBehaviour
     [LabelText("虚拟网格Y最小坐标")] public int minGridY = 1;
     [LabelText("虚拟网格Y最大坐标")] public int maxGridY;
 
+    [Header("分区网格")]
+    [LabelText("启用分区")]
+    public bool useGridGroups;
+    [LabelText("网格组列表"), ShowIf("useGridGroups")]
+    public List<VirtualGridGroup> gridGroups = new();
+
     [Header("可视化配置")]
+    [LabelText("显示虚拟网格高度")]
+    public bool showGridHeight = true;
+    [LabelText("高度标签颜色"), ShowIf("showGridHeight")]
+    public Color heightLabelColor = Color.white;
+    [LabelText("高度标签字号"), ShowIf("showGridHeight"), MinValue(8)]
+    public int heightLabelFontSize = 16;
     [LabelText("显示虚拟网格颜色")]
     public bool showGridColor = true;
-    [LabelText("显示Y轴竖线颜色")]
+    [LabelText("显示Y轴竖线颜色"), ShowIf("showGridHeight")]
     public bool showYAxisColor = true;
     [LabelText("虚拟网格颜色"), ShowIf("showGridColor")]
     public Color gridColor = new Color(0.5f, 0.5f, 0.5f, 0.3f);
@@ -32,20 +44,28 @@ public class BuilderVirtualGrid : MonoBehaviour
     /// <returns>网格坐标</returns>
     public Vector3Int WorldToGrid(Vector3 worldPos, bool clampToBounds = true)
     {
-        // 按网格单元大小缩放后取整
-        int gridX = Mathf.FloorToInt(worldPos.x / gridUnitSize);
-        int gridY = Mathf.FloorToInt(worldPos.y / gridUnitSize);
-        int gridZ = Mathf.FloorToInt(worldPos.z / gridUnitSize);
+        var cell = WorldToCell(worldPos, gridUnitSize);
 
-        // 限制在地图边界内
         if (clampToBounds)
         {
-            gridX = Mathf.Clamp(gridX, minGridXZ, maxGridXZ);
-            gridY = Mathf.Clamp(gridY, minGridY, maxGridY);
-            gridZ = Mathf.Clamp(gridZ, minGridXZ, maxGridXZ);
+            cell.x = Mathf.Clamp(cell.x, minGridXZ, maxGridXZ);
+            cell.y = Mathf.Clamp(cell.y, minGridY, maxGridY);
+            cell.z = Mathf.Clamp(cell.z, minGridXZ, maxGridXZ);
         }
 
-        return new Vector3Int(gridX, gridY, gridZ);
+        return cell;
+    }
+
+    /// <summary>
+    /// 世界坐标 → 格索引（左闭区间，与 Gizmo / 放置逻辑一致）
+    /// </summary>
+    public static Vector3Int WorldToCell(Vector3 worldPos, int gridUnitSize)
+    {
+        var unit = gridUnitSize > 0 ? gridUnitSize : 1;
+        return new Vector3Int(
+            Mathf.FloorToInt(worldPos.x / unit),
+            Mathf.FloorToInt(worldPos.y / unit),
+            Mathf.FloorToInt(worldPos.z / unit));
     }
 
     /// <summary>
@@ -64,7 +84,7 @@ public class BuilderVirtualGrid : MonoBehaviour
         return new Vector3(worldX, worldY, worldZ);
     }
 
-    //验证边界可行性
+    // 左闭右开 [min, max)，与 VirtualGridGroup.Contains 一致
     public bool ValidBoundary(Vector3Int gridPos)
     {
         if (gridPos.x < minGridXZ || gridPos.y < minGridY || gridPos.z < minGridXZ)
@@ -78,56 +98,71 @@ public class BuilderVirtualGrid : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// 放置校验用：启用分区时必须在某一允许的分区内，否则走全局 ValidBoundary
+    /// </summary>
+    public bool ValidPlacementCell(Vector3Int gridPos)
+    {
+        if (!useGridGroups || gridGroups == null || gridGroups.Count == 0)
+            return ValidBoundary(gridPos);
+
+        foreach (var group in gridGroups)
+        {
+            if (group != null && group.allowPlacement && group.Contains(gridPos))
+                return true;
+        }
+        return false;
+    }
+
     #region 编辑器可视化（Scene视图画网格线）
+#if UNITY_EDITOR
+    public static int EditorGridUnitSize { get; set; } = 1;
+#endif
+
+    private void OnValidate()
+    {
+#if UNITY_EDITOR
+        EditorGridUnitSize = Mathf.Max(1, gridUnitSize);
+#endif
+        ValidateConfig();
+    }
+
     /// <summary>
     /// 在Scene视图画网格线
     /// </summary>
     private void OnDrawGizmos()
     {
-        if (!showGrid) return;
-        // 配置不合法时不绘制
-        if (gridUnitSize <= 0 || maxGridXZ < minGridXZ || maxGridY < minGridY)
-        {
+        if (gridUnitSize <= 0)
             return;
-        }
 
-        if (showGridColor)
+        float planeYOffset = gridUnitSize * 0.02f; // 略高于地面，减少与 Scene 地面重叠时的闪烁
+
+        // 全局网格（未启用分区 或 与分区同时显示作参考）
+        if (!useGridGroups && maxGridXZ >= minGridXZ && maxGridY >= minGridY)
+            DrawGlobalGridGizmos(planeYOffset);
+
+        // 分区网格：与下方可视化配置同一套逻辑
+        if (useGridGroups && gridGroups != null)
         {
-            // 1. 绘制X-Z平面网格（每层Y都画）
-            Gizmos.color = gridColor;
-            for (int y = minGridY; y <= maxGridY; y++)
+            foreach (var group in gridGroups)
             {
-                // 绘制X轴方向的水平线
-                for (int z = minGridXZ; z <= maxGridXZ; z++)
-                {
-                    Vector3 start = new Vector3(minGridXZ * gridUnitSize, y * gridUnitSize, z * gridUnitSize);
-                    Vector3 end = new Vector3(maxGridXZ * gridUnitSize, y * gridUnitSize, z * gridUnitSize);
-                    Gizmos.DrawLine(start, end);
-                }
-
-                // 绘制Z轴方向的竖直线
-                for (int x = minGridXZ; x <= maxGridXZ; x++)
-                {
-                    Vector3 start = new Vector3(x * gridUnitSize, y * gridUnitSize, minGridXZ * gridUnitSize);
-                    Vector3 end = new Vector3(x * gridUnitSize, y * gridUnitSize, maxGridXZ * gridUnitSize);
-                    Gizmos.DrawLine(start, end);
-                }
+                group?.DrawGizmo(
+                    gridUnitSize, showGridColor, showGridHeight, showYAxisColor,
+                    gridColor, yAxisColor, planeYOffset,
+                    heightLabelColor, heightLabelFontSize);
             }
         }
-        if (showYAxisColor)
-        {
-            // 2. 绘制Y轴竖线（区分高度）
-            Gizmos.color = yAxisColor;
-            for (int x = minGridXZ; x <= maxGridXZ; x++)
-            {
-                for (int z = minGridXZ; z <= maxGridXZ; z++)
-                {
-                    Vector3 start = new Vector3(x * gridUnitSize, minGridY * gridUnitSize, z * gridUnitSize);
-                    Vector3 end = new Vector3(x * gridUnitSize, maxGridY * gridUnitSize, z * gridUnitSize);
-                    Gizmos.DrawLine(start, end);
-                }
-            }
-        }
+    }
+
+    private void DrawGlobalGridGizmos(float planeYOffset)
+    {
+        GridGizmoDraw.DrawRegionBounds(
+            minGridXZ, maxGridXZ, minGridY, maxGridY, minGridXZ, maxGridXZ,
+            gridUnitSize, planeYOffset,
+            showGridColor, showGridHeight, showYAxisColor,
+            gridColor, yAxisColor,
+            showGridHeight ? maxGridY - minGridY : 0,
+            heightLabelColor, heightLabelFontSize);
     }
     #endregion
 

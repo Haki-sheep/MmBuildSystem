@@ -12,6 +12,7 @@ namespace Mm_Budier.Editor
         private BuilderEditorSettings settings;
         private EnumManagerPage enumManagerPage;
         private BuilderSettingsPage builderSettingsPage;
+        private GridGroupsManagerPage gridGroupsManagerPage;
 
         [MenuItem("Tools/MmBuilderSsytem/BuildEditorWindow")]
         private static void Open()
@@ -45,6 +46,7 @@ namespace Mm_Budier.Editor
             tree.Add("枚举管理器", enumManagerPage, EditorIcons.HamburgerMenu);
             BuildEnumEntryMenu(tree);
             tree.Add("建造系统设置", builderSettingsPage, EditorIcons.SettingsCog);
+            tree.Add("分区管理", gridGroupsManagerPage, EditorIcons.GridBlocks);
 
             tree.EnumerateTree()
                 .Where(x => x.Value is CubeTypeGroupPage)
@@ -86,8 +88,10 @@ namespace Mm_Budier.Editor
             settings = EditorSettingsUtility.LoadOrCreate();
             enumManagerPage ??= new EnumManagerPage();
             builderSettingsPage ??= new BuilderSettingsPage();
+            gridGroupsManagerPage ??= new GridGroupsManagerPage();
             enumManagerPage.Bind(this, settings);
             builderSettingsPage.LoadConfig();
+            gridGroupsManagerPage.Refresh();
         }
 
         private void BuildEnumEntryMenu(OdinMenuTree tree)

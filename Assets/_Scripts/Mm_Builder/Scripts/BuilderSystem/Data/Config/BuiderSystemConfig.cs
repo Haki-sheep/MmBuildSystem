@@ -8,6 +8,8 @@ namespace Mm_Budier
     [CreateAssetMenu(fileName = "BuilderSystemSetting", menuName = "Mm_Builder/BuilderSystemSetting")]
     public class BuilderSystemSetting : SerializedScriptableObject
     {
+        public const string AssetPath = "Assets/_Scripts/Mm_Builder/Scripts/BuilderSystem/So/Config/BuiderRuntimeSettings.asset";
+
         private static BuilderSystemSetting instance;
 
         public static BuilderSystemSetting Instance
@@ -15,8 +17,11 @@ namespace Mm_Budier
             get
             {
                 if (instance == null)
-                    instance = AssetDatabase.LoadAssetAtPath<BuilderSystemSetting>(
-                            "Assets/_Scripts/Mm_Builder/Scripts/Data/So/Config/BuiderRuntimeSettings.asset");
+                {
+#if UNITY_EDITOR
+                    instance = UnityEditor.AssetDatabase.LoadAssetAtPath<BuilderSystemSetting>(AssetPath);
+#endif
+                }
                 return instance;
             }
         }

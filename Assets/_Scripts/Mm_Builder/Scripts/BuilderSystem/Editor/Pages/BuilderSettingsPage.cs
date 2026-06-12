@@ -6,8 +6,6 @@ namespace Mm_Budier.Editor
     // 建造系统配置页
     public class BuilderSettingsPage
     {
-        public const string ConfigAssetPath = "Assets/_Scripts/Mm_Builder/Scripts/Data/So/Config/BuiderRuntimeSettings.asset";
-
         [InlineEditor(InlineEditorModes.FullEditor)]
         [HideLabel]
         [ShowInInspector]
@@ -15,7 +13,7 @@ namespace Mm_Budier.Editor
 
         public void LoadConfig()
         {
-            config = AssetDatabase.LoadAssetAtPath<BuilderSystemSetting>(ConfigAssetPath);
+            config = AssetDatabase.LoadAssetAtPath<BuilderSystemSetting>(BuilderSystemSetting.AssetPath);
         }
     }
 }
